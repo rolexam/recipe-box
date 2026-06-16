@@ -9,6 +9,7 @@
  */
 
 import { searchByIngredient, SearchError } from './api.js';
+import { initThemeToggle } from './theme.js';
 
 const MESSAGES = Object.freeze({
   emptyInput: 'Please enter an ingredient to search for.',
@@ -152,6 +153,11 @@ function init() {
     event.preventDefault();
     void handleSearch(els);
   });
+
+  const themeButton = document.getElementById('theme-toggle');
+  if (themeButton instanceof HTMLButtonElement) {
+    initThemeToggle(themeButton);
+  }
 }
 
 init();
