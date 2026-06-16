@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Recipe Search by Ingredient</title>
+    <title>Recipe Box</title>
     <link rel="stylesheet" href="./styles.css" />
     <script>
       // Apply theme before paint to avoid a flash of the wrong colors.
@@ -27,8 +27,8 @@
     <main class="app">
       <div class="app__header">
         <div>
-          <h1 class="app__title">Recipe Search</h1>
-          <p class="app__subtitle">Find recipes by an ingredient you have on hand.</p>
+          <h1 class="app__title">Recipe Box</h1>
+          <p class="app__subtitle">Create recipes, browse them, and export a shopping list.</p>
         </div>
         <button
           id="theme-toggle"
@@ -41,27 +41,111 @@
         </button>
       </div>
 
-      <form id="search-form" class="search" novalidate>
-        <label class="search__label" for="ingredient-input">Ingredient</label>
-        <div class="search__row">
-          <input
-            id="ingredient-input"
-            class="search__input"
-            type="text"
-            name="ingredient"
-            placeholder="e.g. tomato"
-            autocomplete="off"
-            aria-describedby="search-status"
-          />
-          <button id="search-button" class="search__button" type="submit">
-            Search
+      <!-- ───────────────────────── Search ───────────────────────── -->
+      <section class="section" aria-labelledby="search-heading">
+        <h2 id="search-heading" class="section__title">Search by ingredient</h2>
+
+        <form id="search-form" class="search" novalidate>
+          <label class="search__label" for="ingredient-input">Ingredient</label>
+          <div class="search__row">
+            <input
+              id="ingredient-input"
+              class="search__input"
+              type="text"
+              name="ingredient"
+              placeholder="e.g. tomato"
+              autocomplete="off"
+              aria-describedby="search-status"
+            />
+            <button id="search-button" class="search__button" type="submit">
+              Search
+            </button>
+          </div>
+        </form>
+
+        <p id="search-status" class="status" role="status" aria-live="polite"></p>
+
+        <ul id="results" class="results" aria-label="Search results"></ul>
+      </section>
+
+      <!-- ──────────────────────── Create recipe ──────────────────────── -->
+      <section class="section" aria-labelledby="create-heading">
+        <h2 id="create-heading" class="section__title">Add a recipe</h2>
+
+        <form id="recipe-form" class="recipe-form" novalidate>
+          <div class="field">
+            <label class="field__label" for="recipe-title">Title</label>
+            <input
+              id="recipe-title"
+              class="field__input"
+              type="text"
+              name="title"
+              placeholder="e.g. Tomato Soup"
+              autocomplete="off"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="recipe-servings">Servings</label>
+            <input
+              id="recipe-servings"
+              class="field__input"
+              type="number"
+              name="servings"
+              min="1"
+              step="1"
+              value="1"
+              required
+            />
+          </div>
+
+          <div class="field">
+            <label class="field__label" for="recipe-instructions">Instructions</label>
+            <textarea
+              id="recipe-instructions"
+              class="field__input field__textarea"
+              name="instructions"
+              rows="4"
+              placeholder="Optional step-by-step instructions…"
+            ></textarea>
+          </div>
+
+          <fieldset class="ingredients">
+            <legend class="ingredients__legend">Ingredients</legend>
+            <div id="ingredient-rows" class="ingredients__rows"></div>
+            <button
+              id="add-ingredient"
+              class="button button--ghost"
+              type="button"
+            >
+              + Add ingredient
+            </button>
+          </fieldset>
+
+          <div class="recipe-form__actions">
+            <button id="recipe-submit" class="button button--primary" type="submit">
+              Save recipe
+            </button>
+          </div>
+        </form>
+
+        <p id="recipe-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <!-- ──────────────────────── All recipes ──────────────────────── -->
+      <section class="section" aria-labelledby="recipes-heading">
+        <div class="section__header">
+          <h2 id="recipes-heading" class="section__title">All recipes</h2>
+          <button id="export-csv" class="button button--ghost" type="button">
+            Export shopping list (CSV)
           </button>
         </div>
-      </form>
 
-      <p id="search-status" class="status" role="status" aria-live="polite"></p>
+        <p id="recipes-status" class="status" role="status" aria-live="polite"></p>
 
-      <ul id="results" class="results" aria-label="Search results"></ul>
+        <ul id="recipe-list" class="recipe-list" aria-label="All recipes"></ul>
+      </section>
     </main>
 
     <script src="./app.js" type="module"></script>

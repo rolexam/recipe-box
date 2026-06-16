@@ -10,6 +10,7 @@
 
 import { searchByIngredient, SearchError } from './api.js';
 import { initThemeToggle } from './theme.js';
+import { initRecipes } from './recipes.js';
 
 const MESSAGES = Object.freeze({
   emptyInput: 'Please enter an ingredient to search for.',
@@ -158,6 +159,9 @@ function init() {
   if (themeButton instanceof HTMLButtonElement) {
     initThemeToggle(themeButton);
   }
+
+  // Wire up the recipe create / list / export UI.
+  initRecipes();
 }
 
 init();
