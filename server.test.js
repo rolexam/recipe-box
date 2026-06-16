@@ -166,3 +166,73 @@ describe('POST /shopping-list', () => {
     expect(res.body).toHaveProperty('error');
   });
 });
+
+describe('POST /shopping-list/export', () => {
+  test('returns CSV with header and aggregated rows', async () => {
+    const app = makeApp();
+    const p = await request(app).post('/recipes').send(PANCAKES);
+    const o = await request(app).post('/recipes').send(OMELETTE);
+    const res = await request(app)
+      .post('/shopping-list/export')
+      .send({ recipeIds: [p.body.id, o.body.id] });
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/^text\/csv/);
+    expect(res.headers['content-disposition']).toMatch(/attachment/);
+    expect(res.headers['content-disposition']).toMatch(/shopping-list\.csv/);
+
+    const text = res.text;
+    const lines = text.split('\r\n');
+    expect(lines[0]).toBe('name,quantity,unit');
+    // 1 header + 3 merged items (Egg/Milk merged, Flour solo) + trailing ''
+    expect(lines).toHaveLength(5);
+    expect(lines[lines.length - 1]).toBe('');
+
+    const dataLines = lines.slice(1, -1);
+    expect(dataLines).toContain('Egg,6,pcs');
+    expect(dataLines).toContain('Flour,200,g');
+    expect(dataLines).toContain('Milk,350,ml');
+  });
+
+  test('escapes CSV special characters in ingredient names', async () => {
+    const app = makeApp();
+    const created = await request(app).post('/recipes').send({
+      title: 'Quirky',
+      servings: 1,
+      instructions: 'n/a',
+      ingredients: [
+        { name: 'Salt, kosher', quantity: 1, unit: 'tsp' },
+        { name: 'Pepper "black"', quantity: 2, unit: 'tsp' },
+      ],
+    });
+
+    const res = await request(app)
+      .post('/shopping-list/export')
+      .send({ recipeIds: [created.body.id] });
+
+    expect(res.status).toBe(200);
+    const dataLines = res.text.split('\r\n').slice(1, -1);
+    expect(dataLines).toContain('"Salt, kosher",1,tsp');
+    expect(dataLines).toContain('"Pepper ""black""",2,tsp');
+  });
+
+  test('returns 400 for empty or invalid recipeIds', async () => {
+    const app = makeApp();
+    const empty = await request(app).post('/shopping-list/export').send({ recipeIds: [] });
+    expect(empty.status).toBe(400);
+
+    const bad = await request(app)
+      .post('/shopping-list/export')
+      .send({ recipeIds: ['not-an-id'] });
+    expect(bad.status).toBe(400);
+  });
+
+  test('returns 404 when a recipe id does not resolve', async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post('/shopping-list/export')
+      .send({ recipeIds: [9999] });
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error');
+  });
+});

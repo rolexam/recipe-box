@@ -21,7 +21,12 @@
 const path = require('path');
 const express = require('express');
 const { createDb } = require('./db.js');
-const { scaleServings, buildShoppingList, searchByIngredient } = require('./logic.js');
+const {
+  scaleServings,
+  buildShoppingList,
+  searchByIngredient,
+  formatShoppingListCsv,
+} = require('./logic.js');
 
 const DEFAULT_PORT = 3000;
 
@@ -196,6 +201,46 @@ function createApp(store) {
     }),
   );
 
+  // Resolve a request body's `recipeIds` field to recipe objects from the store.
+  // Returns either { recipes } on success or { error, status } describing why
+  // resolution failed (so the caller can issue a single typed response).
+  function resolveRecipeIds(body) {
+    const { recipeIds } = body || {};
+
+    if (!Array.isArray(recipeIds) || recipeIds.length === 0) {
+      return { error: 'Body must include a non-empty "recipeIds" array', status: 400 };
+    }
+
+    const ids = [];
+    for (const raw of recipeIds) {
+      const id = parseId(raw);
+      if (id === null) {
+        return {
+          error: `Invalid recipe id in "recipeIds": ${JSON.stringify(raw)} (must be a positive integer)`,
+          status: 400,
+        };
+      }
+      ids.push(id);
+    }
+
+    const recipes = [];
+    const missing = [];
+    for (const id of ids) {
+      const recipe = store.getRecipe(id);
+      if (recipe === null) {
+        missing.push(id);
+      } else {
+        recipes.push(recipe);
+      }
+    }
+
+    if (missing.length > 0) {
+      return { error: `Recipe(s) not found: ${missing.join(', ')}`, status: 404 };
+    }
+
+    return { recipes };
+  }
+
   // SHOPPING LIST — POST /shopping-list  body: { recipeIds: [...] }
   // Decision: a recipeId that does not resolve to a recipe yields 404 with a
   // clear message naming the missing id(s). Malformed input (not an array,
@@ -203,45 +248,32 @@ function createApp(store) {
   app.post(
     '/shopping-list',
     wrap((req, res) => {
-      const { recipeIds } = req.body || {};
-
-      if (!Array.isArray(recipeIds) || recipeIds.length === 0) {
-        return res
-          .status(400)
-          .json({ error: 'Body must include a non-empty "recipeIds" array' });
+      const resolved = resolveRecipeIds(req.body);
+      if (resolved.error) {
+        return res.status(resolved.status).json({ error: resolved.error });
       }
-
-      const ids = [];
-      for (const raw of recipeIds) {
-        const id = parseId(raw);
-        if (id === null) {
-          return res.status(400).json({
-            error: `Invalid recipe id in "recipeIds": ${JSON.stringify(raw)} (must be a positive integer)`,
-          });
-        }
-        ids.push(id);
-      }
-
-      // Resolve ids -> recipe objects via the store (logic.js needs objects).
-      const recipes = [];
-      const missing = [];
-      for (const id of ids) {
-        const recipe = store.getRecipe(id);
-        if (recipe === null) {
-          missing.push(id);
-        } else {
-          recipes.push(recipe);
-        }
-      }
-
-      if (missing.length > 0) {
-        return res
-          .status(404)
-          .json({ error: `Recipe(s) not found: ${missing.join(', ')}` });
-      }
-
-      const shoppingList = buildShoppingList(recipes);
+      const shoppingList = buildShoppingList(resolved.recipes);
       res.status(200).json(shoppingList);
+    }),
+  );
+
+  // SHOPPING LIST EXPORT — POST /shopping-list/export  body: { recipeIds: [...] }
+  // Same validation as /shopping-list, but returns a downloadable CSV file
+  // (Content-Type: text/csv) with the consolidated ingredients.
+  app.post(
+    '/shopping-list/export',
+    wrap((req, res) => {
+      const resolved = resolveRecipeIds(req.body);
+      if (resolved.error) {
+        return res.status(resolved.status).json({ error: resolved.error });
+      }
+      const shoppingList = buildShoppingList(resolved.recipes);
+      const csv = formatShoppingListCsv(shoppingList);
+
+      res.status(200);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="shopping-list.csv"');
+      res.send(csv);
     }),
   );
 
