@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipe Search by Ingredient</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1 class="app__title">Recipe Search</h1>
+      <p class="app__subtitle">Find recipes by an ingredient you have on hand.</p>
+
+      <form id="search-form" class="search" novalidate>
+        <label class="search__label" for="ingredient-input">Ingredient</label>
+        <div class="search__row">
+          <input
+            id="ingredient-input"
+            class="search__input"
+            type="text"
+            name="ingredient"
+            placeholder="e.g. tomato"
+            autocomplete="off"
+            aria-describedby="search-status"
+          />
+          <button id="search-button" class="search__button" type="submit">
+            Search
+          </button>
+        </div>
+      </form>
+
+      <p id="search-status" class="status" role="status" aria-live="polite"></p>
+
+      <ul id="results" class="results" aria-label="Search results"></ul>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
